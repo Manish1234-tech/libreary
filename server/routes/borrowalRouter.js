@@ -9,7 +9,8 @@ const {
     addBorrowal,
     updateBorrowal,
     deleteBorrowal
-} = require('../controllers/BorrowalController')
+} = require('../controllers/borrowalController')
+// Note: filenames are case-sensitive on Linux; require the exact filename
 
 router.get("/getAll", (req, res) => getAllBorrowals(req,res))
 
