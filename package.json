@@ -19,7 +19,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "install": "(cd server && npm install) & (cd client && npm install)",
     "postinstall": "npm run build",
-    "build": "npm --prefix client run build && rm -rf build && cp -R client/build build",
+    "build": "npm --prefix client run build && rm -rf build dist && cp -R client/build build && cp -R client/build dist",
     "server": "cd server && npm run start",
     "client": "cd client && npm run start",
     "start": "npm run server & npm run client"
