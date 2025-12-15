@@ -1,4 +1,4 @@
-const backendApiUrl = "http://localhost:8080/api";
+const backendApiUrl = "https://libreary-gqj4.vercel.app/api";
 
 const routes = {
   AUTHOR: "author",
