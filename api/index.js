@@ -45,7 +45,27 @@ app.use(logger('dev'));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
-// Make sure preflight requests are handled
+// Ensure preflight requests always get proper headers even if later middleware fails
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    try {
+      const url = new URL(origin);
+      if (allowedOrigins.indexOf(origin) !== -1 || url.hostname.endsWith('.vercel.app')) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+      }
+    } catch (e) {
+      // ignore parse error
+    }
+  }
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
+// Also keep normal CORS middleware for full handling
 app.options('*', cors(corsOptions));
 app.use(cors(corsOptions));
 
@@ -104,5 +124,10 @@ try {
 }
 
 app.get('/', (req, res) => res.send('Express running on Vercel 🚀'));
+
+// Diagnostic ping route to verify CORS and headers
+app.get('/ping', (req, res) => {
+  res.json({ ok: true, origin: req.headers.origin, headers: req.headers });
+});
 
 module.exports = app;
