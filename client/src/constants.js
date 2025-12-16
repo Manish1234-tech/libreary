@@ -1,4 +1,4 @@
-const backendApiUrl = "https://libreary-gqj4.vercel.app/api";
+const backendApiUrl = "https://libreary.onrender.com/api";
 
 const routes = {
   AUTHOR: "author",

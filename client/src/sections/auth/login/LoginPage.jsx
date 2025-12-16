@@ -43,7 +43,7 @@ export default function LoginPage() {
     if (email === "" || password === "") {
       toast.error("Please enter email and password");
     } else {
-      axios.post(`https://libreary-gqj4.vercel.app/api/auth/login`, { email, password }, { withCredentials: true })
+      axios.post(`https://libreary.onrender.com/api/auth/login`, { email, password }, { withCredentials: true })
         .then((response) => {
           // handle success
           if (response.status === 200) {
