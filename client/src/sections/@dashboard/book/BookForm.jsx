@@ -38,7 +38,7 @@ const BookForm = ({
   const [genres, setGenres] = useState([]);
 
   const getAllAuthors = () => {
-    axios.get('http://localhost:8080/api/author/getAll')
+    axios.get('https://libreary.onrender.com/api/author/getAll')
       .then((response) => {
         // handle success
         console.log(response.data)
@@ -52,7 +52,7 @@ const BookForm = ({
   }
 
   const getAllGenres = () => {
-    axios.get('http://localhost:8080/api/genre/getAll')
+    axios.get('https://libreary.onrender.com/api/genre/getAll')
       .then((response) => {
         // handle success
         console.log(response.data)
