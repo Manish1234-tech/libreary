@@ -41,14 +41,17 @@ mongoose.connect(process.env.MONGO_URI, {
   })
   .catch((err) => console.log('DB connection error', err));
 
-// Use CORS for Cross Origin Resource Sharing. Prefer an env-driven origin in production.
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+// Update CORS to allow localhost and deployed URL
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://libreary-2wdhpoedy-manishs-projects-33afb6d3.vercel.app/'
+];
+
 app.use(cors({
-  origin: FRONTEND_URL,
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET','POST','PUT','DELETE','OPTION'],
-  allowedHeaders: ['Content-Type', 'Authorization',
-    'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 // Set middleware to manage sessions
