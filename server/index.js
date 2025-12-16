@@ -44,7 +44,7 @@ mongoose.connect(process.env.MONGO_URI, {
 // Update CORS to allow localhost and deployed URL
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://libreary-2wdhpoedy-manishs-projects-33afb6d3.vercel.app/'
+  'https://libreary-2wdhpoedy-manishs-projects-33afb6d3.vercel.app'
 ];
 
 app.use(cors({
