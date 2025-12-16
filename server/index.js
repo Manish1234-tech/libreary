@@ -41,9 +41,10 @@ mongoose.connect(process.env.MONGO_URI, {
   })
   .catch((err) => console.log('DB connection error', err));
 
-// Use CORS for Cross Origin Resource Sharing
+// Use CORS for Cross Origin Resource Sharing. Prefer an env-driven origin in production.
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: FRONTEND_URL,
   credentials: true,
   methods: ['GET','POST','PUT','DELETE','OPTION'],
   allowedHeaders: ['Content-Type', 'Authorization',
@@ -84,4 +85,6 @@ app.use("/api/review", reviewRouter);
 
 app.get('/', (req, res) => res.send('Welcome to Library Management System'));
 
-//app.listen(PORT, () => console.log(`Server listening on port ${PORT}!`));
+// Bind the server to the port provided by the environment (Render sets PORT). This must be enabled
+// for the platform to detect an open port.
+app.listen(PORT, () => console.log(`Server listening on port ${PORT}!`));
