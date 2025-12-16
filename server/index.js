@@ -41,27 +41,69 @@ mongoose.connect(process.env.MONGO_URI, {
   })
   .catch((err) => console.log('DB connection error', err));
 
-// Update CORS to allow localhost and deployed URL
+// Update CORS to allow localhost and deployed URL (read from env), and allow Vercel previews:
 const allowedOrigins = [
   'http://localhost:3000',
+  process.env.FRONTEND_URL,
   'https://libreary-2wdhpoedy-manishs-projects-33afb6d3.vercel.app',
   'https://libreary-git-main-manishs-projects-33afb6d3.vercel.app',
   'https://libreary.vercel.app'
-];
+].filter(Boolean);
 
-app.use(cors({
-  origin: allowedOrigins,
+const corsOptions = {
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      console.log('CORS: allowing origin', origin);
+      return callback(null, true);
+    }
+
+    // Allow Vercel preview domains automatically (e.g., <name>.vercel.app)
+    try {
+      const host = new URL(origin).host;
+      if (host && host.endsWith('.vercel.app')) {
+        console.log('CORS: allowing vercel origin', origin);
+        return callback(null, true);
+      }
+    } catch (e) {
+      // ignore URL parse errors
+    }
+
+    // Allow localhost with any port
+    if (/https?:\/\/localhost(:\d+)?/.test(origin)) {
+      console.log('CORS: allowing localhost origin', origin);
+      return callback(null, true);
+    }
+
+    console.warn('CORS: blocking origin', origin);
+    return callback(new Error('CORS policy: Origin not allowed'));
+  },
   credentials: true,
-  methods: ['GET','POST','PUT','DELETE','OPTION'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-}));
+  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // Set middleware to manage sessions
+// When behind a proxy (e.g., Render) and serving over HTTPS, enable trust proxy
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
     resave: true,
     saveUninitialized: true,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      httpOnly: true,
+    },
   })
 );
 
