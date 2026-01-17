@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -10,6 +11,7 @@ import {
   Grid,
   IconButton,
   MenuItem,
+  Popover,
   Stack,
   TextField,
   Typography,
@@ -34,14 +36,14 @@ const StyledBookImage = styled("img")({
 const BookPage = () => {
   const { user } = useAuth();
 
-  /* -------------------- STATES -------------------- */
   const [book, setBook] = useState({
     name: "",
     isbn: "",
-    authorId: "",
-    genreId: "",
     summary: "",
     isAvailable: true,
+    authorId: "",
+    genreId: "",
+    photoUrl: "",
     issuedTo: "",
     issuedAt: null,
   });
@@ -57,16 +59,16 @@ const BookPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUpdateForm, setIsUpdateForm] = useState(false);
 
-  /* -------------------- API CALLS -------------------- */
+  // ---------------- API ----------------
   const getAllBooks = async () => {
     try {
       const res = await axios.get(
         "https://libreary.onrender.com/api/book/getAll"
       );
       setBooks(res.data.booksList);
-      setIsTableLoading(false);
     } catch {
       toast.error("Failed to fetch books");
+    } finally {
       setIsTableLoading(false);
     }
   };
@@ -99,86 +101,82 @@ const BookPage = () => {
     }
   };
 
-  /* -------------------- HELPERS -------------------- */
-  const getSelectedBookDetails = () => {
-    const selectedBook = books.find((b) => b._id === selectedBookId);
-    if (!selectedBook) return;
-
-    setBook({
-      name: selectedBook.name,
-      isbn: selectedBook.isbn,
-      authorId: selectedBook.author?._id,
-      genreId: selectedBook.genre?._id,
-      summary: selectedBook.summary,
-      isAvailable: selectedBook.isAvailable,
-      issuedTo: selectedBook.issuedTo || "",
-      issuedAt: selectedBook.issuedAt || null,
-    });
+  const deleteBook = async (id) => {
+    try {
+      await axios.delete(
+        `https://libreary.onrender.com/api/book/delete/${id}`
+      );
+      toast.success("Book deleted");
+      handleCloseDialog();
+      getAllBooks();
+    } catch {
+      toast.error("Something went wrong");
+    }
   };
 
-  /* -------------------- HANDLERS -------------------- */
-  const handleOpenMenu = (event) => setIsMenuOpen(event.currentTarget);
+  // ---------------- HELPERS ----------------
+  const getSelectedBookDetails = () => {
+    const selected = books.find((b) => b._id === selectedBookId);
+    if (selected) setBook(selected);
+  };
+
+  const handleOpenMenu = (e) => setIsMenuOpen(e.currentTarget);
   const handleCloseMenu = () => setIsMenuOpen(null);
+  const handleOpenDialog = () => setIsDialogOpen(true);
+  const handleCloseDialog = () => setIsDialogOpen(false);
 
   const handleOpenModal = (update = false) => {
     setIsUpdateForm(update);
-    setIsModalOpen(true);
     if (update) getSelectedBookDetails();
+    setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedBookId(null);
-    setBook({
-      name: "",
-      isbn: "",
-      authorId: "",
-      genreId: "",
-      summary: "",
-      isAvailable: true,
-      issuedTo: "",
-      issuedAt: null,
-    });
   };
 
-  /* -------------------- EFFECT -------------------- */
   useEffect(() => {
     getAllBooks();
   }, []);
 
-  /* -------------------- FILTER LOGIC -------------------- */
+  // ---------------- FILTER ----------------
   const genres = ["ALL", ...new Set(books.map((b) => b.genre?.name))];
 
-  const filteredBooks = books.filter((book) => {
+  const filteredBooks = books.filter((b) => {
     const search = filterText.toLowerCase();
 
     const matchesSearch =
-      book.name.toLowerCase().includes(search) ||
-      book.isbn.toLowerCase().includes(search) ||
-      book.author?.name.toLowerCase().includes(search);
+      b.name.toLowerCase().includes(search) ||
+      b.isbn.toLowerCase().includes(search) ||
+      b.author?.name.toLowerCase().includes(search);
 
     const matchesGenre =
-      selectedGenre === "ALL" || book.genre?.name === selectedGenre;
+      selectedGenre === "ALL" || b.genre?.name === selectedGenre;
 
     const matchesAvailability =
       availability === "ALL" ||
-      (availability === "AVAILABLE" && book.isAvailable) ||
-      (availability === "ISSUED" && !book.isAvailable);
+      (availability === "AVAILABLE" && b.isAvailable) ||
+      (availability === "ISSUED" && !b.isAvailable);
 
     return matchesSearch && matchesGenre && matchesAvailability;
   });
 
-  /* -------------------- UI -------------------- */
+  // ---------------- UI ----------------
   return (
     <>
+      <Helmet>
+        <title>Books</title>
+      </Helmet>
+
       <Container>
         <Stack direction="row" justifyContent="space-between" mb={5} flexWrap="wrap">
           <Typography variant="h3">Books</Typography>
 
           <Stack direction="row" spacing={2} flexWrap="wrap">
             <TextField
+              label="Search"
               size="small"
-              placeholder="Search book / author / ISBN..."
               value={filterText}
               onChange={(e) => setFilterText(e.target.value)}
             />
@@ -186,25 +184,21 @@ const BookPage = () => {
             <TextField
               select
               size="small"
-              label="Category"
+              label="Genre"
               value={selectedGenre}
               onChange={(e) => setSelectedGenre(e.target.value)}
-              sx={{ minWidth: 150 }}
             >
-              {genres.map((genre) => (
-                <MenuItem key={genre} value={genre}>
-                  {genre}
-                </MenuItem>
+              {genres.map((g) => (
+                <MenuItem key={g} value={g}>{g}</MenuItem>
               ))}
             </TextField>
 
             <TextField
               select
               size="small"
-              label="Status"
+              label="Availability"
               value={availability}
               onChange={(e) => setAvailability(e.target.value)}
-              sx={{ minWidth: 150 }}
             >
               <MenuItem value="ALL">All</MenuItem>
               <MenuItem value="AVAILABLE">Available</MenuItem>
@@ -227,46 +221,38 @@ const BookPage = () => {
           <Grid textAlign="center">
             <CircularProgress />
           </Grid>
-        ) : filteredBooks.length > 0 ? (
+        ) : filteredBooks.length ? (
           <Grid container spacing={4}>
-            {filteredBooks.map((book) => (
-              <Grid key={book._id} item xs={12} sm={6} md={4}>
+            {filteredBooks.map((b) => (
+              <Grid key={b._id} item xs={12} sm={6} md={4}>
                 <Card>
                   <Box sx={{ pt: "80%", position: "relative" }}>
                     <Label sx={{ position: "absolute", top: 16, left: 16 }}>
-                      {book.genre?.name || "Unknown"}
+                      {b.genre?.name || "Unknown"}
                     </Label>
-
                     {user?.isAdmin && (
                       <IconButton
                         sx={{ position: "absolute", top: 8, right: 8 }}
                         onClick={(e) => {
-                          setSelectedBookId(book._id);
+                          setSelectedBookId(b._id);
                           handleOpenMenu(e);
-                          handleOpenModal(true);
                         }}
                       >
-                        <Iconify icon="eva:edit-fill" />
+                        <Iconify icon="eva:more-vertical-fill" />
                       </IconButton>
                     )}
-
-                    <StyledBookImage src={book.photoUrl} alt={book.name} />
+                    <StyledBookImage src={b.photoUrl} alt={b.name} />
                   </Box>
-
                   <Stack spacing={1} sx={{ p: 2 }}>
                     <Typography variant="h5" textAlign="center" noWrap>
-                      {book.name}
+                      {b.name}
                     </Typography>
-                    <Typography variant="subtitle1" textAlign="center" color="text.secondary">
-                      {book.author?.name || "Unknown Author"}
-                    </Typography>
-                    <Label color={book.isAvailable ? "success" : "error"}>
-                      {book.isAvailable ? "Available" : "Issued"}
-                    </Label>
                     <Typography variant="subtitle2" textAlign="center">
-                      ISBN: {book.isbn}
+                      ISBN: {b.isbn}
                     </Typography>
-                    <Typography variant="body2">{book.summary}</Typography>
+                    <Label color={b.isAvailable ? "success" : "error"}>
+                      {b.isAvailable ? "Available" : "Issued"}
+                    </Label>
                   </Stack>
                 </Card>
               </Grid>
@@ -276,6 +262,17 @@ const BookPage = () => {
           <Alert severity="warning">No books found</Alert>
         )}
       </Container>
+
+      <Popover open={Boolean(isMenuOpen)} anchorEl={isMenuOpen} onClose={handleCloseMenu}>
+        <MenuItem onClick={() => handleOpenModal(true)}>
+          <Iconify icon="eva:edit-fill" sx={{ mr: 2 }} />
+          Edit
+        </MenuItem>
+        <MenuItem sx={{ color: "error.main" }} onClick={handleOpenDialog}>
+          <Iconify icon="eva:trash-2-outline" sx={{ mr: 2 }} />
+          Delete
+        </MenuItem>
+      </Popover>
 
       <BookForm
         isUpdateForm={isUpdateForm}
@@ -288,9 +285,9 @@ const BookPage = () => {
       />
 
       <BookDialog
-        open={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
-        onConfirm={() => {}}
+        isDialogOpen={isDialogOpen}
+        handleDeleteBook={() => deleteBook(selectedBookId)}
+        handleCloseDialog={handleCloseDialog}
       />
     </>
   );
