@@ -4,7 +4,6 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import {
   Box,
-  Button,
   Card,
   CircularProgress,
   Container,
@@ -16,12 +15,11 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { Alert } from "@mui/lab";
 import { styled } from "@mui/material/styles";
 
-import { useAuth } from "../../../hooks/useAuth";
 import Iconify from "../../../components/iconify";
 import Label from "../../../components/label";
+import { useAuth } from "../../../hooks/useAuth";
 import BookDialog from "./BookDialog";
 import BookForm from "./BookForm";
 
@@ -39,6 +37,7 @@ const BookPage = () => {
   const { user } = useAuth();
 
   /* -------------------- STATES -------------------- */
+  const [books, setBooks] = useState([]);
   const [book, setBook] = useState({
     name: "",
     isbn: "",
@@ -51,16 +50,16 @@ const BookPage = () => {
     issuedAt: null,
   });
 
-  const [books, setBooks] = useState([]);
   const [filterText, setFilterText] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("ALL");
   const [availability, setAvailability] = useState("ALL");
+
   const [selectedBookId, setSelectedBookId] = useState(null);
-  const [isTableLoading, setIsTableLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUpdateForm, setIsUpdateForm] = useState(false);
+  const [isTableLoading, setIsTableLoading] = useState(true);
 
   /* -------------------- API -------------------- */
   const getAllBooks = async () => {
@@ -68,39 +67,11 @@ const BookPage = () => {
       const res = await axios.get(
         "https://libreary.onrender.com/api/book/getAll"
       );
-      setBooks(res.data.booksList);
+      setBooks(res.data.booksList || []);
     } catch {
       toast.error("Failed to fetch books");
     } finally {
       setIsTableLoading(false);
-    }
-  };
-
-  const addBook = async () => {
-    try {
-      await axios.post(
-        "https://libreary.onrender.com/api/book/add",
-        book
-      );
-      toast.success("Book added");
-      handleCloseModal();
-      getAllBooks();
-    } catch {
-      toast.error("Something went wrong");
-    }
-  };
-
-  const updateBook = async () => {
-    try {
-      await axios.put(
-        `https://libreary.onrender.com/api/book/update/${selectedBookId}`,
-        book
-      );
-      toast.success("Book updated");
-      handleCloseModal();
-      getAllBooks();
-    } catch {
-      toast.error("Something went wrong");
     }
   };
 
@@ -127,22 +98,27 @@ const BookPage = () => {
       isbn: selected.isbn,
       summary: selected.summary,
       isAvailable: selected.isAvailable,
-      authorId: selected.author?._id,
-      genreId: selected.genre?._id,
-      photoUrl: selected.photoUrl,
+      authorId: selected.author?._id || "",
+      genreId: selected.genre?._id || "",
+      photoUrl: selected.photoUrl || "",
       issuedTo: selected.issuedTo || "",
       issuedAt: selected.issuedAt || null,
     });
   };
 
   /* -------------------- HANDLERS -------------------- */
-  const handleOpenMenu = (e) => setIsMenuOpen(e.currentTarget);
+  const handleOpenMenu = (e, id) => {
+    setSelectedBookId(id);
+    setIsMenuOpen(e.currentTarget);
+  };
+
   const handleCloseMenu = () => setIsMenuOpen(null);
 
   const handleOpenModal = (update = false) => {
     setIsUpdateForm(update);
-    setIsModalOpen(true);
     if (update) getSelectedBookDetails();
+    setIsModalOpen(true);
+    handleCloseMenu();
   };
 
   const handleCloseModal = () => {
@@ -167,7 +143,7 @@ const BookPage = () => {
   }, []);
 
   /* -------------------- FILTER LOGIC -------------------- */
-  const genres = ["ALL", ...new Set(books.map((b) => b.genre?.name))];
+  const genres = ["ALL", ...new Set(books.map((b) => b.genre?.name).filter(Boolean))];
 
   const filteredBooks = books.filter((b) => {
     const search = filterText.toLowerCase();
@@ -175,7 +151,7 @@ const BookPage = () => {
     const matchesSearch =
       b.name.toLowerCase().includes(search) ||
       b.isbn.toLowerCase().includes(search) ||
-      b.author?.name.toLowerCase().includes(search);
+      b.author?.name?.toLowerCase().includes(search);
 
     const matchesGenre =
       selectedGenre === "ALL" || b.genre?.name === selectedGenre;
@@ -201,6 +177,7 @@ const BookPage = () => {
 
           <Stack direction="row" spacing={2} flexWrap="wrap">
             <TextField
+              label="Search"
               size="small"
               placeholder="Search book / author / ISBN..."
               value={filterText}
@@ -234,16 +211,6 @@ const BookPage = () => {
               <MenuItem value="AVAILABLE">Available</MenuItem>
               <MenuItem value="ISSUED">Issued</MenuItem>
             </TextField>
-
-            {user?.isAdmin && (
-              <Button
-                variant="contained"
-                startIcon={<Iconify icon="eva:plus-fill" />}
-                onClick={() => handleOpenModal(false)}
-              >
-                New Book
-              </Button>
-            )}
           </Stack>
         </Stack>
 
@@ -264,10 +231,7 @@ const BookPage = () => {
                     {user?.isAdmin && (
                       <IconButton
                         sx={{ position: "absolute", top: 8, right: 8 }}
-                        onClick={(e) => {
-                          setSelectedBookId(b._id);
-                          handleOpenMenu(e);
-                        }}
+                        onClick={(e) => handleOpenMenu(e, b._id)}
                       >
                         <Iconify icon="eva:more-vertical-fill" />
                       </IconButton>
@@ -280,15 +244,23 @@ const BookPage = () => {
                     <Typography variant="h5" textAlign="center" noWrap>
                       {b.name}
                     </Typography>
-                    <Typography variant="subtitle1" textAlign="center" color="text.secondary">
+
+                    <Typography
+                      variant="subtitle1"
+                      textAlign="center"
+                      color="text.secondary"
+                    >
                       {b.author?.name || "Unknown Author"}
                     </Typography>
+
                     <Label color={b.isAvailable ? "success" : "error"}>
                       {b.isAvailable ? "Available" : "Issued"}
                     </Label>
+
                     <Typography variant="subtitle2" textAlign="center">
                       ISBN: {b.isbn}
                     </Typography>
+
                     <Typography variant="body2">{b.summary}</Typography>
                   </Stack>
                 </Card>
@@ -296,21 +268,17 @@ const BookPage = () => {
             ))}
           </Grid>
         ) : (
-          <Alert severity="warning">No books found</Alert>
+          <Typography textAlign="center">No books found</Typography>
         )}
       </Container>
 
       {/* MENU */}
       <Popover open={Boolean(isMenuOpen)} anchorEl={isMenuOpen} onClose={handleCloseMenu}>
-        <MenuItem
-          onClick={() => {
-            handleCloseMenu();
-            handleOpenModal(true);
-          }}
-        >
+        <MenuItem onClick={() => handleOpenModal(true)}>
           <Iconify icon="eva:edit-fill" sx={{ mr: 2 }} />
           Edit
         </MenuItem>
+
         <MenuItem sx={{ color: "error.main" }} onClick={() => setIsDialogOpen(true)}>
           <Iconify icon="eva:trash-2-outline" sx={{ mr: 2 }} />
           Delete
@@ -324,8 +292,8 @@ const BookPage = () => {
         handleCloseModal={handleCloseModal}
         book={book}
         setBook={setBook}
-        handleAddBook={addBook}
-        handleUpdateBook={updateBook}
+        getAllBooks={getAllBooks}
+        selectedBookId={selectedBookId}
       />
 
       <BookDialog
