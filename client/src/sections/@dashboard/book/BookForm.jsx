@@ -1,3 +1,7 @@
+import PropTypes from "prop-types";
+import axios from "axios";
+import toast from "react-hot-toast";
+import { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -15,15 +19,10 @@ import {
   Select,
   Stack,
   TextField,
-  Typography
+  Typography,
 } from "@mui/material";
-import PropTypes from "prop-types";
-import axios from "axios";
-import toast from "react-hot-toast";
-import { useEffect, useState } from "react";
 import Iconify from "../../../components/iconify";
 
-// ---------------- MODAL STYLE ----------------
 const style = {
   position: "absolute",
   top: "50%",
@@ -34,7 +33,7 @@ const style = {
   bgcolor: "background.paper",
   borderRadius: 2,
   boxShadow: 24,
-  p: 2
+  p: 2,
 };
 
 const BookForm = ({
@@ -44,32 +43,38 @@ const BookForm = ({
   book,
   setBook,
   handleAddBook,
-  handleUpdateBook
+  handleUpdateBook,
 }) => {
   const [isModalLoading, setIsModalLoading] = useState(true);
   const [authors, setAuthors] = useState([]);
   const [genres, setGenres] = useState([]);
 
-  // ---------------- API CALLS ----------------
-  const getAllAuthors = () => {
-    axios
-      .get("https://libreary.onrender.com/api/author/getAll")
-      .then((res) => setAuthors(res.data.authorsList))
-      .catch(() => toast.error("Error fetching authors"));
+  const getAllAuthors = async () => {
+    try {
+      const res = await axios.get(
+        "https://libreary.onrender.com/api/author/getAll"
+      );
+      setAuthors(res.data.authorsList);
+    } catch {
+      toast.error("Error fetching authors");
+    }
   };
 
-  const getAllGenres = () => {
-    axios
-      .get("https://libreary.onrender.com/api/genre/getAll")
-      .then((res) => {
-        setGenres(res.data.genresList);
-        setIsModalLoading(false);
-      })
-      .catch(() => toast.error("Error fetching genres"));
+  const getAllGenres = async () => {
+    try {
+      const res = await axios.get(
+        "https://libreary.onrender.com/api/genre/getAll"
+      );
+      setGenres(res.data.genresList);
+      setIsModalLoading(false);
+    } catch {
+      toast.error("Error fetching genres");
+    }
   };
 
   useEffect(() => {
     if (isModalOpen) {
+      setIsModalLoading(true);
       getAllAuthors();
       getAllGenres();
     }
@@ -90,8 +95,7 @@ const BookForm = ({
               <CircularProgress />
             </Grid>
           ) : (
-            <Stack spacing={3} py={2} px={3} maxHeight="70vh" overflow="auto">
-              {/* BOOK NAME */}
+            <Stack spacing={3} py={2}>
               <TextField
                 label="Book Name"
                 value={book.name || ""}
@@ -101,7 +105,6 @@ const BookForm = ({
                 }
               />
 
-              {/* ISBN */}
               <TextField
                 label="ISBN"
                 value={book.isbn || ""}
@@ -111,7 +114,6 @@ const BookForm = ({
                 }
               />
 
-              {/* AUTHOR */}
               <FormControl fullWidth>
                 <InputLabel>Author</InputLabel>
                 <Select
@@ -129,7 +131,6 @@ const BookForm = ({
                 </Select>
               </FormControl>
 
-              {/* GENRE */}
               <FormControl fullWidth>
                 <InputLabel>Genre</InputLabel>
                 <Select
@@ -147,7 +148,6 @@ const BookForm = ({
                 </Select>
               </FormControl>
 
-              {/* AVAILABILITY */}
               <FormControl>
                 <FormLabel>Availability</FormLabel>
                 <RadioGroup
@@ -157,10 +157,6 @@ const BookForm = ({
                     setBook({
                       ...book,
                       isAvailable: e.target.value === "true",
-                      issuedTo:
-                        e.target.value === "true" ? "" : book.issuedTo,
-                      issuedAt:
-                        e.target.value === "true" ? null : book.issuedAt
                     })
                   }
                 >
@@ -177,24 +173,20 @@ const BookForm = ({
                 </RadioGroup>
               </FormControl>
 
-              {/* ISSUE DETAILS */}
               {isIssued && (
                 <>
                   <TextField
                     label="Issued To"
                     value={book.issuedTo || ""}
-                    required
                     onChange={(e) =>
                       setBook({ ...book, issuedTo: e.target.value })
                     }
                   />
-
                   <TextField
                     label="Issue Date"
                     type="date"
                     InputLabelProps={{ shrink: true }}
                     value={book.issuedAt || ""}
-                    required
                     onChange={(e) =>
                       setBook({ ...book, issuedAt: e.target.value })
                     }
@@ -202,21 +194,18 @@ const BookForm = ({
                 </>
               )}
 
-              {/* SUMMARY */}
               <TextField
                 label="Summary"
-                value={book.summary || ""}
                 multiline
                 rows={3}
+                value={book.summary || ""}
                 onChange={(e) =>
                   setBook({ ...book, summary: e.target.value })
                 }
               />
 
-              {/* ACTION BUTTONS */}
               <Box textAlign="center" pt={2}>
                 <Button
-                  size="large"
                   variant="contained"
                   onClick={isUpdateForm ? handleUpdateBook : handleAddBook}
                   startIcon={<Iconify icon="bi:check-lg" />}
@@ -226,7 +215,6 @@ const BookForm = ({
                 </Button>
 
                 <Button
-                  size="large"
                   variant="outlined"
                   onClick={handleCloseModal}
                   startIcon={<Iconify icon="charm:cross" />}
@@ -249,7 +237,7 @@ BookForm.propTypes = {
   book: PropTypes.object,
   setBook: PropTypes.func,
   handleAddBook: PropTypes.func,
-  handleUpdateBook: PropTypes.func
+  handleUpdateBook: PropTypes.func,
 };
 
 export default BookForm;

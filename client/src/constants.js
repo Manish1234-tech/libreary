@@ -1,13 +1,14 @@
-// constants.js
+// client/src/constants.js
+
 const backendApiUrl = "https://libreary.onrender.com/api";
 
 export const routes = {
   AUTHOR: "author",
   AUTH: "auth",
   BOOK: "book",
-  BORROWAL: "borrowal", 
+  BORROWAL: "borrowal",
   GENRE: "genre",
-  USER: "user"
+  USER: "user",
 };
 
 export const methods = {
@@ -16,8 +17,8 @@ export const methods = {
   POST: "add",
   PUT: "update",
   DELETE: "delete",
-  PAY_FINE_OFFLINE: "pay-fine"
+  PAY_FINE_OFFLINE: "pay-fine",
 };
 
 export const apiUrl = (route, method, id = "") =>
-  `${backendApiUrl}/${route}/${method}${id && `/${id}`}`;
+  `${backendApiUrl}/${route}/${method}${id ? `/${id}` : ""}`;
