@@ -1,5 +1,6 @@
-const Book = require('../models/book')
-const mongoose = require("mongoose");
+const Book = require("../models/Book");
+const mongoose = require('mongoose')
+
 
 const getBook = async (req, res) => {
   const bookId = req.params.id;
@@ -100,11 +101,29 @@ const deleteBook = async (req, res) => {
     });
   })
 }
+const getBooksByCategory = async (req, res) => {
+  const books = await Book.find({ category: req.params.category })
+    .populate("author genre");
+
+  res.json({ books });
+};
+
+ const getBooksByStatus = async (req, res) => {
+  const isAvailable = req.params.status === "available";
+
+  const books = await Book.find({ isAvailable })
+    .populate("author genre");
+
+  res.json({ books });
+};
+
 
 module.exports = {
   getBook,
   getAllBooks,
   addBook,
   updateBook,
-  deleteBook
+  deleteBook,
+  getBooksByCategory,
+  getBooksByStatus
 }

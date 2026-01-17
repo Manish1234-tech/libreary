@@ -1,34 +1,26 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
 import PropTypes from "prop-types";
+import { Dialog, DialogActions, DialogTitle, Button } from "@mui/material";
 
-const BorrowalDialog = ({isDialogOpen, handleCloseDialog, borrowalId, handleDeleteBorrowal}) =>
-    <Dialog
-      open={isDialogOpen}
-      onClose={handleCloseDialog}
-      aria-labelledby="alert-dialog-title"
-      aria-describedby="alert-dialog-description"
-    >
-      <DialogTitle id="alert-dialog-title">
-        Confirm action
-      </DialogTitle>
-      <DialogContent>
-        <DialogContentText id="alert-dialog-description">
-          Are you sure you want to delete this borrowal?
-        </DialogContentText>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={handleCloseDialog}>No</Button>
-        <Button onClick={() => handleDeleteBorrowal(borrowalId)} autoFocus>
-          Yes
-        </Button>
-      </DialogActions>
-    </Dialog>
+const BorrowalDialog = ({ open, onClose, onConfirm }) => (
+  <Dialog open={open} onClose={onClose}>
+    <DialogTitle>
+      Are you sure you want to delete this borrowal?
+    </DialogTitle>
 
+    <DialogActions>
+      <Button onClick={onClose}>Cancel</Button>
+      <Button color="error" onClick={onConfirm}>
+        Delete
+      </Button>
+    </DialogActions>
+  </Dialog>
+);
+
+/* ✅ PROPS VALIDATION */
 BorrowalDialog.propTypes = {
-  isDialogOpen: PropTypes.bool,
-  handleCloseDialog: PropTypes.func,
-  borrowalId: PropTypes.string,
-  handleDeleteBorrowal: PropTypes.func
+  open: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onConfirm: PropTypes.func.isRequired
 };
 
-export default BorrowalDialog
+export default BorrowalDialog;

@@ -19,8 +19,8 @@ import {
 } from "@mui/material";
 import { Alert } from "@mui/lab";
 import { styled } from "@mui/material/styles";
-import { useAuth } from "../../../hooks/useAuth";
 
+import { useAuth } from "../../../hooks/useAuth";
 import Label from "../../../components/label";
 import BookDialog from "./BookDialog";
 import BookForm from "./BookForm";
@@ -37,11 +37,12 @@ const StyledBookImage = styled("img")({
   position: "absolute"
 });
 
+// ----------------------------------------------------------------------
+
 const BookPage = () => {
   const { user } = useAuth();
 
-  // ----------------------------------------------------------------------
-  // STATES
+  // -------------------- STATES --------------------
 
   const [book, setBook] = useState({
     id: "",
@@ -56,6 +57,9 @@ const BookPage = () => {
 
   const [books, setBooks] = useState([]);
   const [filterText, setFilterText] = useState("");
+  const [selectedGenre, setSelectedGenre] = useState("ALL");
+  const [availability, setAvailability] = useState("ALL");
+
   const [selectedBookId, setSelectedBookId] = useState(null);
   const [isTableLoading, setIsTableLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(null);
@@ -63,8 +67,7 @@ const BookPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUpdateForm, setIsUpdateForm] = useState(false);
 
-  // ----------------------------------------------------------------------
-  // API CALLS
+  // -------------------- API CALLS --------------------
 
   const getAllBooks = () => {
     axios
@@ -73,9 +76,7 @@ const BookPage = () => {
         setBooks(response.data.booksList);
         setIsTableLoading(false);
       })
-      .catch((error) => {
-        console.log(error);
-      });
+      .catch(() => toast.error("Failed to fetch books"));
   };
 
   const addBook = () => {
@@ -115,7 +116,7 @@ const BookPage = () => {
       .catch(() => toast.error("Something went wrong"));
   };
 
-  // ----------------------------------------------------------------------
+  // -------------------- HELPERS --------------------
 
   const getSelectedBookDetails = () => {
     const selectedBook = books.find((b) => b._id === selectedBookId);
@@ -135,8 +136,7 @@ const BookPage = () => {
     });
   };
 
-  // ----------------------------------------------------------------------
-  // HANDLERS
+  // -------------------- HANDLERS --------------------
 
   const handleOpenMenu = (event) => setIsMenuOpen(event.currentTarget);
   const handleCloseMenu = () => setIsMenuOpen(null);
@@ -145,26 +145,36 @@ const BookPage = () => {
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
 
-  // ----------------------------------------------------------------------
+  // -------------------- EFFECT --------------------
 
   useEffect(() => {
     getAllBooks();
   }, []);
 
-  // ----------------------------------------------------------------------
-  // SEARCH FILTER
+  // -------------------- FILTER LOGIC --------------------
+
+  const genres = ["ALL", ...new Set(books.map((b) => b.genre?.name))];
 
   const filteredBooks = books.filter((book) => {
     const search = filterText.toLowerCase();
 
-    return (
+    const matchesSearch =
       book.name.toLowerCase().includes(search) ||
       book.isbn.toLowerCase().includes(search) ||
-      book.author?.name.toLowerCase().includes(search)
-    );
+      book.author?.name.toLowerCase().includes(search);
+
+    const matchesGenre =
+      selectedGenre === "ALL" || book.genre?.name === selectedGenre;
+
+    const matchesAvailability =
+      availability === "ALL" ||
+      (availability === "AVAILABLE" && book.isAvailable) ||
+      (availability === "ISSUED" && !book.isAvailable);
+
+    return matchesSearch && matchesGenre && matchesAvailability;
   });
 
-  // ----------------------------------------------------------------------
+  // -------------------- UI --------------------
 
   return (
     <>
@@ -174,16 +184,44 @@ const BookPage = () => {
 
       <Container>
         {/* HEADER */}
-        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={5}>
           <Typography variant="h3">Books</Typography>
 
-          <Stack direction="row" spacing={2}>
+          <Stack direction="row" spacing={2} flexWrap="wrap">
             <TextField
               size="small"
               placeholder="Search book / author / ISBN..."
               value={filterText}
               onChange={(e) => setFilterText(e.target.value)}
             />
+
+            <TextField
+              select
+              size="small"
+              label="Category"
+              value={selectedGenre}
+              onChange={(e) => setSelectedGenre(e.target.value)}
+              sx={{ minWidth: 150 }}
+            >
+              {genres.map((genre) => (
+                <MenuItem key={genre} value={genre}>
+                  {genre}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              select
+              size="small"
+              label="Status"
+              value={availability}
+              onChange={(e) => setAvailability(e.target.value)}
+              sx={{ minWidth: 150 }}
+            >
+              <MenuItem value="ALL">All</MenuItem>
+              <MenuItem value="AVAILABLE">Available</MenuItem>
+              <MenuItem value="ISSUED">Issued</MenuItem>
+            </TextField>
 
             {user.isAdmin && (
               <Button
@@ -206,60 +244,60 @@ const BookPage = () => {
             <CircularProgress />
           </Grid>
         ) : filteredBooks.length > 0 ? (
-          <Grid container spacing={4}>
-            {filteredBooks.map((book) => (
-              <Grid key={book._id} item xs={12} sm={6} md={4}>
-                <Card>
-                  <Box sx={{ pt: "80%", position: "relative" }}>
-                    <Label
-                      sx={{
-                        zIndex: 9,
-                        top: 16,
-                        left: 16,
-                        position: "absolute"
-                      }}
-                    >
-                      {book.genre.name}
-                    </Label>
+          <>
+            <Typography variant="subtitle2" sx={{ mb: 2 }}>
+              Showing {filteredBooks.length} books
+            </Typography>
 
-                    {user.isAdmin && (
-                      <IconButton
-                        sx={{ position: "absolute", top: 8, right: 8, zIndex: 9 }}
-                        onClick={(e) => {
-                          setSelectedBookId(book._id);
-                          handleOpenMenu(e);
-                        }}
-                      >
-                        <Iconify icon="eva:more-vertical-fill" />
-                      </IconButton>
-                    )}
+            <Grid container spacing={4}>
+              {filteredBooks.map((book) => (
+                <Grid key={book._id} item xs={12} sm={6} md={4}>
+                  <Card>
+                    <Box sx={{ pt: "80%", position: "relative" }}>
+                      <Label sx={{ position: "absolute", top: 16, left: 16, zIndex: 9 }}>
+                        {book.genre?.name || "unknown"}
+                      </Label>
 
-                    <StyledBookImage src={book.photoUrl} alt={book.name} />
-                  </Box>
+                      {user.isAdmin && (
+                        <IconButton
+                          sx={{ position: "absolute", top: 8, right: 8, zIndex: 9 }}
+                          onClick={(e) => {
+                            setSelectedBookId(book._id);
+                            handleOpenMenu(e);
+                          }}
+                        >
+                          <Iconify icon="eva:more-vertical-fill" />
+                        </IconButton>
+                      )}
 
-                  <Stack spacing={1} sx={{ p: 2 }}>
-                    <Typography variant="h5" textAlign="center" noWrap>
-                      {book.name}
-                    </Typography>
+                      <StyledBookImage src={book.photoUrl} alt={book.name} />
+                    </Box>
 
-                    <Typography variant="subtitle1" textAlign="center" sx={{ color: "#888" }} noWrap>
-                      {book.author.name}
-                    </Typography>
+                    <Stack spacing={1} sx={{ p: 2 }}>
+                      <Typography variant="h5" textAlign="center" noWrap>
+                        {book.name}
+                      </Typography>
 
-                    <Label color={book.isAvailable ? "success" : "error"}>
-                      {book.isAvailable ? "Available" : "Not available"}
-                    </Label>
+                      <Typography variant="subtitle1" textAlign="center" sx={{ color: "#888" }}>
+                        {book.author?.name || "unknown Author"}
 
-                    <Typography variant="subtitle2" textAlign="center">
-                      ISBN: {book.isbn}
-                    </Typography>
+                      </Typography>
 
-                    <Typography variant="body2">{book.summary}</Typography>
-                  </Stack>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
+                      <Label color={book.isAvailable ? "success" : "error"}>
+                        {book.isAvailable ? "Available" : "Issued"}
+                      </Label>
+
+                      <Typography variant="subtitle2" textAlign="center">
+                        ISBN: {book.isbn}
+                      </Typography>
+
+                      <Typography variant="body2">{book.summary}</Typography>
+                    </Stack>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          </>
         ) : (
           <Alert severity="warning">No books found</Alert>
         )}
