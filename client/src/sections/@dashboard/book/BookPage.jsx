@@ -25,6 +25,7 @@ import Label from "../../../components/label";
 import BookDialog from "./BookDialog";
 import BookForm from "./BookForm";
 
+/* -------------------- STYLES -------------------- */
 const StyledBookImage = styled("img")({
   top: 0,
   width: "100%",
@@ -33,16 +34,18 @@ const StyledBookImage = styled("img")({
   position: "absolute",
 });
 
+/* -------------------- COMPONENT -------------------- */
 const BookPage = () => {
   const { user } = useAuth();
 
+  /* -------------------- STATES -------------------- */
   const [book, setBook] = useState({
     name: "",
     isbn: "",
-    authorId: "",
-    genreId: "",
     summary: "",
     isAvailable: true,
+    authorId: "",
+    genreId: "",
     photoUrl: "",
     issuedTo: "",
     issuedAt: null,
@@ -59,7 +62,7 @@ const BookPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUpdateForm, setIsUpdateForm] = useState(false);
 
-  // ---------------- API ----------------
+  /* -------------------- API -------------------- */
   const getAllBooks = async () => {
     try {
       const res = await axios.get(
@@ -114,31 +117,56 @@ const BookPage = () => {
     }
   };
 
-  // ---------------- HELPERS ----------------
+  /* -------------------- HELPERS -------------------- */
   const getSelectedBookDetails = () => {
     const selected = books.find((b) => b._id === selectedBookId);
-    if (selected) setBook(selected);
+    if (!selected) return;
+
+    setBook({
+      name: selected.name,
+      isbn: selected.isbn,
+      summary: selected.summary,
+      isAvailable: selected.isAvailable,
+      authorId: selected.author?._id,
+      genreId: selected.genre?._id,
+      photoUrl: selected.photoUrl,
+      issuedTo: selected.issuedTo || "",
+      issuedAt: selected.issuedAt || null,
+    });
   };
 
+  /* -------------------- HANDLERS -------------------- */
   const handleOpenMenu = (e) => setIsMenuOpen(e.currentTarget);
   const handleCloseMenu = () => setIsMenuOpen(null);
 
   const handleOpenModal = (update = false) => {
     setIsUpdateForm(update);
-    if (update) getSelectedBookDetails();
     setIsModalOpen(true);
+    if (update) getSelectedBookDetails();
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedBookId(null);
+    setBook({
+      name: "",
+      isbn: "",
+      summary: "",
+      isAvailable: true,
+      authorId: "",
+      genreId: "",
+      photoUrl: "",
+      issuedTo: "",
+      issuedAt: null,
+    });
   };
 
+  /* -------------------- EFFECT -------------------- */
   useEffect(() => {
     getAllBooks();
   }, []);
 
-  // ---------------- FILTER ----------------
+  /* -------------------- FILTER LOGIC -------------------- */
   const genres = ["ALL", ...new Set(books.map((b) => b.genre?.name))];
 
   const filteredBooks = books.filter((b) => {
@@ -160,6 +188,7 @@ const BookPage = () => {
     return matchesSearch && matchesGenre && matchesAvailability;
   });
 
+  /* -------------------- UI -------------------- */
   return (
     <>
       <Helmet>
@@ -172,8 +201,8 @@ const BookPage = () => {
 
           <Stack direction="row" spacing={2} flexWrap="wrap">
             <TextField
-              label="Search"
               size="small"
+              placeholder="Search book / author / ISBN..."
               value={filterText}
               onChange={(e) => setFilterText(e.target.value)}
             />
@@ -184,9 +213,12 @@ const BookPage = () => {
               label="Genre"
               value={selectedGenre}
               onChange={(e) => setSelectedGenre(e.target.value)}
+              sx={{ minWidth: 150 }}
             >
               {genres.map((g) => (
-                <MenuItem key={g} value={g}>{g}</MenuItem>
+                <MenuItem key={g} value={g}>
+                  {g}
+                </MenuItem>
               ))}
             </TextField>
 
@@ -196,6 +228,7 @@ const BookPage = () => {
               label="Availability"
               value={availability}
               onChange={(e) => setAvailability(e.target.value)}
+              sx={{ minWidth: 150 }}
             >
               <MenuItem value="ALL">All</MenuItem>
               <MenuItem value="AVAILABLE">Available</MenuItem>
@@ -227,6 +260,7 @@ const BookPage = () => {
                     <Label sx={{ position: "absolute", top: 16, left: 16 }}>
                       {b.genre?.name || "Unknown"}
                     </Label>
+
                     {user?.isAdmin && (
                       <IconButton
                         sx={{ position: "absolute", top: 8, right: 8 }}
@@ -238,15 +272,24 @@ const BookPage = () => {
                         <Iconify icon="eva:more-vertical-fill" />
                       </IconButton>
                     )}
+
                     <StyledBookImage src={b.photoUrl} alt={b.name} />
                   </Box>
+
                   <Stack spacing={1} sx={{ p: 2 }}>
                     <Typography variant="h5" textAlign="center" noWrap>
                       {b.name}
                     </Typography>
+                    <Typography variant="subtitle1" textAlign="center" color="text.secondary">
+                      {b.author?.name || "Unknown Author"}
+                    </Typography>
                     <Label color={b.isAvailable ? "success" : "error"}>
                       {b.isAvailable ? "Available" : "Issued"}
                     </Label>
+                    <Typography variant="subtitle2" textAlign="center">
+                      ISBN: {b.isbn}
+                    </Typography>
+                    <Typography variant="body2">{b.summary}</Typography>
                   </Stack>
                 </Card>
               </Grid>
@@ -257,8 +300,14 @@ const BookPage = () => {
         )}
       </Container>
 
+      {/* MENU */}
       <Popover open={Boolean(isMenuOpen)} anchorEl={isMenuOpen} onClose={handleCloseMenu}>
-        <MenuItem onClick={() => handleOpenModal(true)}>
+        <MenuItem
+          onClick={() => {
+            handleCloseMenu();
+            handleOpenModal(true);
+          }}
+        >
           <Iconify icon="eva:edit-fill" sx={{ mr: 2 }} />
           Edit
         </MenuItem>
@@ -268,6 +317,7 @@ const BookPage = () => {
         </MenuItem>
       </Popover>
 
+      {/* MODAL + DIALOG */}
       <BookForm
         isUpdateForm={isUpdateForm}
         isModalOpen={isModalOpen}
