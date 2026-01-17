@@ -39,10 +39,10 @@ const BookPage = () => {
   const [book, setBook] = useState({
     name: "",
     isbn: "",
-    summary: "",
-    isAvailable: true,
     authorId: "",
     genreId: "",
+    summary: "",
+    isAvailable: true,
     photoUrl: "",
     issuedTo: "",
     issuedAt: null,
@@ -79,7 +79,7 @@ const BookPage = () => {
         "https://libreary.onrender.com/api/book/add",
         book
       );
-      toast.success("Book added successfully");
+      toast.success("Book added");
       handleCloseModal();
       getAllBooks();
     } catch {
@@ -93,7 +93,7 @@ const BookPage = () => {
         `https://libreary.onrender.com/api/book/update/${selectedBookId}`,
         book
       );
-      toast.success("Book updated successfully");
+      toast.success("Book updated");
       handleCloseModal();
       getAllBooks();
     } catch {
@@ -101,13 +101,13 @@ const BookPage = () => {
     }
   };
 
-  const deleteBook = async (id) => {
+  const deleteBook = async () => {
     try {
       await axios.delete(
-        `https://libreary.onrender.com/api/book/delete/${id}`
+        `https://libreary.onrender.com/api/book/delete/${selectedBookId}`
       );
       toast.success("Book deleted");
-      handleCloseDialog();
+      setIsDialogOpen(false);
       getAllBooks();
     } catch {
       toast.error("Something went wrong");
@@ -122,8 +122,6 @@ const BookPage = () => {
 
   const handleOpenMenu = (e) => setIsMenuOpen(e.currentTarget);
   const handleCloseMenu = () => setIsMenuOpen(null);
-  const handleOpenDialog = () => setIsDialogOpen(true);
-  const handleCloseDialog = () => setIsDialogOpen(false);
 
   const handleOpenModal = (update = false) => {
     setIsUpdateForm(update);
@@ -162,7 +160,6 @@ const BookPage = () => {
     return matchesSearch && matchesGenre && matchesAvailability;
   });
 
-  // ---------------- UI ----------------
   return (
     <>
       <Helmet>
@@ -247,9 +244,6 @@ const BookPage = () => {
                     <Typography variant="h5" textAlign="center" noWrap>
                       {b.name}
                     </Typography>
-                    <Typography variant="subtitle2" textAlign="center">
-                      ISBN: {b.isbn}
-                    </Typography>
                     <Label color={b.isAvailable ? "success" : "error"}>
                       {b.isAvailable ? "Available" : "Issued"}
                     </Label>
@@ -268,7 +262,7 @@ const BookPage = () => {
           <Iconify icon="eva:edit-fill" sx={{ mr: 2 }} />
           Edit
         </MenuItem>
-        <MenuItem sx={{ color: "error.main" }} onClick={handleOpenDialog}>
+        <MenuItem sx={{ color: "error.main" }} onClick={() => setIsDialogOpen(true)}>
           <Iconify icon="eva:trash-2-outline" sx={{ mr: 2 }} />
           Delete
         </MenuItem>
@@ -286,8 +280,8 @@ const BookPage = () => {
 
       <BookDialog
         isDialogOpen={isDialogOpen}
-        handleDeleteBook={() => deleteBook(selectedBookId)}
-        handleCloseDialog={handleCloseDialog}
+        handleDeleteBook={deleteBook}
+        handleCloseDialog={() => setIsDialogOpen(false)}
       />
     </>
   );
