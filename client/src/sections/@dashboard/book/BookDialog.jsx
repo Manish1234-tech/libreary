@@ -1,34 +1,30 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
 import PropTypes from "prop-types";
+import {
+  Dialog,
+  DialogActions,
+  DialogTitle,
+  Button,
+} from "@mui/material";
 
-const BookDialog = ({isDialogOpen, handleCloseDialog, bookId, handleDeleteBook}) =>
-    <Dialog
-      open={isDialogOpen}
-      onClose={handleCloseDialog}
-      aria-labelledby="alert-dialog-title"
-      aria-describedby="alert-dialog-description"
-    >
-      <DialogTitle id="alert-dialog-title">
-        Confirm action
-      </DialogTitle>
-      <DialogContent>
-        <DialogContentText id="alert-dialog-description">
-          Are you sure you want to delete this book?
-        </DialogContentText>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={handleCloseDialog}>No</Button>
-        <Button onClick={() => handleDeleteBook(bookId)} autoFocus>
-          Yes
-        </Button>
-      </DialogActions>
-    </Dialog>
+const BorrowalDialog = ({ open, onClose, onConfirm }) => (
+  <Dialog open={open} onClose={onClose}>
+    <DialogTitle>
+      Are you sure you want to delete this borrowal?
+    </DialogTitle>
 
-BookDialog.propTypes = {
-  isDialogOpen: PropTypes.bool,
-  handleCloseDialog: PropTypes.func,
-  bookId: PropTypes.string,
-  handleDeleteBook: PropTypes.func
+    <DialogActions>
+      <Button onClick={onClose}>Cancel</Button>
+      <Button color="error" onClick={onConfirm}>
+        Delete
+      </Button>
+    </DialogActions>
+  </Dialog>
+);
+
+BorrowalDialog.propTypes = {
+  open: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onConfirm: PropTypes.func.isRequired,
 };
 
-export default BookDialog
+export default BorrowalDialog;
